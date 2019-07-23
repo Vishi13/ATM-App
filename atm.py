@@ -44,9 +44,11 @@ def depositcash():
     conn=pymysql.connect(host='localhost',user='root',password='',db='atm')
     a=conn.cursor()
     a.execute("select * from atmdetails where accno='"+acc+"'and pin='"+p+"'")
+    results=a.fetchall()
+    fbal=int(results[0][3])+int(amt)
     if(a.rowcount>0):
-        a.execute("update atmdetails set balance=balance+'"+amt+"'where accno='"+acc+"'and pin='"+p+"'")
-        a.execute("insert into ministmt (acc,pin,deposit,time)values('"+acc+"','"+p+"','"+amt+"','"+str(datetime.now().strftime('%Y-%m-%d %H:%M:%S'))+"')")
+        a.execute("update atmdetails set balance='"+str(fbal)+"'where accno='"+acc+"'and pin='"+p+"'")
+        a.execute("insert into ministmt (acc,pin,deposit,time,balance)values('"+acc+"','"+p+"','"+amt+"','"+str(datetime.now().strftime('%Y-%m-%d %H:%M:%S'))+"','"+str(fbal)+"')")
         conn.commit()
         messagebox.showinfo('INFO','Amount Deposited')
     else:
@@ -98,8 +100,9 @@ def withdrawcash():
         a.execute("select balance from atmdetails where accno='"+acc+"'and pin='"+p+"'")
         results=a.fetchone()
         if(int(results[0])>=int(amt)):
-            a.execute("update atmdetails set balance=balance-'"+amt+"'where accno='"+acc+"'and pin='"+p+"'")
-            a.execute("insert into ministmt (acc,pin,withdraw,time)values('"+acc+"','"+p+"','"+amt+"','"+str(datetime.now().strftime('%Y-%m-%d %H:%M:%S'))+"')")
+            fbal=int(results[0])-int(amt)
+            a.execute("update atmdetails set balance='"+str(fbal)+"'where accno='"+acc+"'and pin='"+p+"'")
+            a.execute("insert into ministmt (acc,pin,withdraw,time,balance)values('"+acc+"','"+p+"','"+amt+"','"+str(datetime.now().strftime('%Y-%m-%d %H:%M:%S'))+"','"+str(fbal)+"')")
             conn.commit()
             messagebox.showinfo('INFO','AMT WITHDRAWN')
         else:
@@ -148,15 +151,16 @@ def view():
             c.configure(scrollregion=c.bbox("all"),width=1400,height=1000)
         t=Tk()
         t.title("Mini Statement")
-        t.geometry("1400x600")
+        t.geometry("1500x600")
         f3=Frame(t,width=1400,height=600)
         f3.pack(side="top")
         lb1=Label(f3,text="Account Details",font=('Times 15',30,'bold')).grid(row=1,column=2)
-        lb1=Label(f3,text="Acc",font=('ariel',15),width=20).grid(row=2,column=0)
-        lb1=Label(f3,text="PIN",font=('ariel',15),width=20).grid(row=2,column=1)
-        lb1=Label(f3,text="Deposit",font=('ariel',15),width=20).grid(row=2,column=2)
-        lb1=Label(f3,text="Time",font=('ariel',15),width=20).grid(row=2,column=3)
+        lb1=Label(f3,text="Acc",font=('ariel',15),width=18).grid(row=2,column=0)
+        lb1=Label(f3,text="PIN",font=('ariel',15),width=18).grid(row=2,column=1)
+        lb1=Label(f3,text="Deposit",font=('ariel',15),width=18).grid(row=2,column=2)
+        lb1=Label(f3,text="Time",font=('ariel',15),width=18).grid(row=2,column=3)
         lb1=Label(f3,text="Withdraw",font=('ariel',15),width=20).grid(row=2,column=4)
+        lb1=Label(f3,text="Balance",font=('ariel',15),width=18).grid(row=2,column=5) 
         f=Frame(t,width=1500,height=1000)
         f.pack(side="left")
 
@@ -172,11 +176,12 @@ def view():
     
         j=3
         for i in range(0,count):
-            lb1=Label(f2,text=results[i][0],bg='white',width=32,bd=5).grid(row=j,column=0,pady=10,padx=10)
-            lb1=Label(f2,text=results[i][1],bg='white',width=32,bd=5).grid(row=j,column=1,pady=10,padx=10)
-            lb1=Label(f2,text=results[i][2],bg='white',width=32,bd=5).grid(row=j,column=2,pady=10,padx=10)
-            lb1=Label(f2,text=results[i][3],bg='white',width=32,bd=5).grid(row=j,column=3,pady=10,padx=10)
-            lb1=Label(f2,text=results[i][4],bg='white',width=32,bd=5).grid(row=j,column=4,pady=10,padx=10)
+            lb1=Label(f2,text=results[i][0],bg='white',width=20,bd=5,font=('times 15',12)).grid(row=j,column=0,pady=10,padx=10)
+            lb1=Label(f2,text=results[i][1],bg='white',width=20,bd=5,font=('times 15',12)).grid(row=j,column=1,pady=10,padx=10)
+            lb1=Label(f2,text=results[i][2],bg='white',width=20,bd=5,font=('times 15',12)).grid(row=j,column=2,pady=10,padx=10)
+            lb1=Label(f2,text=results[i][3],bg='white',width=25,bd=5,font=('times 15',12)).grid(row=j,column=3,pady=10,padx=10)
+            lb1=Label(f2,text=results[i][4],bg='white',width=20,bd=5,font=('times 15',12)).grid(row=j,column=4,pady=10,padx=10)
+            lb1=Label(f2,text=results[i][5],bg='white',width=20,bd=5,font=('times 15',12)).grid(row=j,column=5,pady=10,padx=10)
             
             j=j+1
          
@@ -232,10 +237,12 @@ def transfer():
         a.execute("select balance from atmdetails where accno='"+acc+"'and pin='"+p+"'")
         results=a.fetchone()
         if(int(results[0])>=int(amt)):
-            a.execute("update atmdetails set balance=balance-'"+amt+"'where accno='"+acc+"'and pin='"+p+"'")
-            a.execute("update atmdetails set balance=balance+'"+amt+"'where accno='"+acc2+"'")
-            a.execute("insert into ministmt (acc,pin,withdraw,time)values('"+acc+"','"+p+"','"+amt+"','"+str(datetime.now().strftime('%Y-%m-%d %H:%M:%S'))+"')")
-            a.execute("insert into ministmt (acc,pin,deposit,time)values('"+acc2+"','"+p+"','"+amt+"','"+str(datetime.now().strftime('%Y-%m-%d %H:%M:%S'))+"')")
+            fwith=int(results[0])-int(amt)
+            fdepo=int(results[0])+int(amt)
+            a.execute("update atmdetails set balance='"+str(fwith)+"'where accno='"+acc+"'and pin='"+p+"'")
+            a.execute("update atmdetails set balance='"+str(fdepo)+"'where accno='"+acc2+"'")
+            a.execute("insert into ministmt (acc,pin,withdraw,time,balance)values('"+acc+"','"+p+"','"+amt+"','"+str(datetime.now().strftime('%Y-%m-%d %H:%M:%S'))+"','"+str(fwith)+"')")
+            a.execute("insert into ministmt (acc,pin,deposit,time,balance)values('"+acc2+"','"+p+"','"+amt+"','"+str(datetime.now().strftime('%Y-%m-%d %H:%M:%S'))+"','"+str(fdepo)+"')")
             conn.commit()
             messagebox.showinfo('INFO','AMT TRANSFERRED')
         else:
@@ -329,10 +336,10 @@ def two():
         a=conn.cursor()
         a.execute("select balance from atmdetails where accno='"+acc+"'and pin='"+p+"'")
         results=a.fetchone()
-        print(int(results[0]))
         if(int(results[0])>=amt):
-            a.execute("update atmdetails set balance=balance-'"+str(amt)+"'where accno='"+acc+"'and pin='"+p+"'")
-            a.execute("insert into ministmt (acc,pin,withdraw,time)values('"+acc+"','"+p+"','"+str(amt)+"','"+str(datetime.now().strftime('%Y-%m-%d %H:%M:%S'))+"')")
+            fbal=int(results[0])-int(amt)
+            a.execute("update atmdetails set balance='"+str(fbal)+"'where accno='"+acc+"'and pin='"+p+"'")
+            a.execute("insert into ministmt (acc,pin,withdraw,time,balance)values('"+acc+"','"+p+"','"+str(amt)+"','"+str(datetime.now().strftime('%Y-%m-%d %H:%M:%S'))+"','"+str(fbal)+"')")
             conn.commit()
             messagebox.showinfo('INFO','AMT WITHDRAWN')
         else:
@@ -354,8 +361,9 @@ def five():
         results=a.fetchone()
         print(int(results[0]))
         if(int(results[0])>=int(amt)):
-            a.execute("update atmdetails set balance=balance-'"+str(amt)+"'where accno='"+acc+"'and pin='"+p+"'")
-            a.execute("insert into ministmt (acc,pin,withdraw,time)values('"+acc+"','"+p+"','"+str(amt)+"','"+str(datetime.now().strftime('%Y-%m-%d %H:%M:%S'))+"')")
+            fbal=int(results[0])-int(amt)
+            a.execute("update atmdetails set balance='"+str(fbal)+"'where accno='"+acc+"'and pin='"+p+"'")
+            a.execute("insert into ministmt (acc,pin,withdraw,time,balance)values('"+acc+"','"+p+"','"+str(amt)+"','"+str(datetime.now().strftime('%Y-%m-%d %H:%M:%S'))+"','"+str(fbal)+"')")
             conn.commit()
             messagebox.showinfo('INFO','AMT WITHDRAWN')
         else:
@@ -377,8 +385,9 @@ def oneth():
         results=a.fetchone()
         print(int(results[0]))
         if(int(results[0])>=int(amt)):
-            a.execute("update atmdetails set balance=balance-'"+str(amt)+"'where accno='"+acc+"'and pin='"+p+"'")
-            a.execute("insert into ministmt (acc,pin,withdraw,time)values('"+acc+"','"+p+"','"+str(amt)+"','"+str(datetime.now().strftime('%Y-%m-%d %H:%M:%S'))+"')")
+            fbal=int(results[0])-int(amt)
+            a.execute("update atmdetails set balance='"+str(fbal)+"'where accno='"+acc+"'and pin='"+p+"'")
+            a.execute("insert into ministmt (acc,pin,withdraw,time,balance)values('"+acc+"','"+p+"','"+str(amt)+"','"+str(datetime.now().strftime('%Y-%m-%d %H:%M:%S'))+"','"+str(fbal)+"')")
             conn.commit()
             messagebox.showinfo('INFO','AMT WITHDRAWN')
         else:
@@ -400,8 +409,9 @@ def fiveth():
         results=a.fetchone()
         print(int(results[0]))
         if(int(results[0])>=int(amt)):
-            a.execute("update atmdetails set balance=balance-'"+str(amt)+"'where accno='"+acc+"'and pin='"+p+"'")
-            a.execute("insert into ministmt (acc,pin,withdraw,time)values('"+acc+"','"+p+"','"+str(amt)+"','"+str(datetime.now().strftime('%Y-%m-%d %H:%M:%S'))+"')")
+            fbal=int(results[0])-int(amt)
+            a.execute("update atmdetails set balance='"+str(fbal)+"'where accno='"+acc+"'and pin='"+p+"'")
+            a.execute("insert into ministmt (acc,pin,withdraw,time,balance)values('"+acc+"','"+p+"','"+str(amt)+"','"+str(datetime.now().strftime('%Y-%m-%d %H:%M:%S'))+"','"+str(fbal)+"')")
             conn.commit()
             messagebox.showinfo('INFO','AMT WITHDRAWN')
         else:
