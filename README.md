@@ -14,5 +14,5 @@ REQUIREMENT:
 # How to run
 * Create a database (name : atm) 
 * Create two tables (1. atmdetails  2. ministmt)
-* Run the python program on idle.
+* Run the python program('atm') on idle and manage your bank accounts.
 
